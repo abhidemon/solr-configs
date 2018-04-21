@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!-- 
+     For more details about configurations options that may appear in
+     this file, see http://wiki.apache.org/solr/SolrConfigXml. 
+-->
+<config>
+
+  <luceneMatchVersion>6.0.1</luceneMatchVersion>
+  <dataDir>${solr.data.dir:}</dataDir>
+
+<!-- 
+    Here are two Request handlers defined for normal querying. If you want to know more about how to configure these see: https://cwiki.apache.org/confluence/display/solr/RequestHandlers+and+SearchComponents+in+SolrConfig
+-->
+  <requestHandler name="/select" class="solr.SearchHandler" />
+  <requestHandler name="/query" class="solr.SearchHandler" />
+
+  <updateHandler class="solr.DirectUpdateHandler2" name="/train">
+	  <lst name="defaults">
+		  <str name="update.chain">guessSchema</str>
+	  </lst>
+  </updateHandler>
+
+  <initParams path="/update/**">
+	    <lst name="defaults">
+<!--		 <str name="update.chain">add-unknown-fields-to-the-schema</str>   -->
+     <str name="update.chain">guessSchema</str>
+
+            </lst>
+  </initParams>
+
+
+  <initParams path="/train/**">
+      <lst name="defaults">
+<!--     <str name="update.chain">add-unknown-fields-to-the-schema</str>   -->
+     <str name="update.chain">guessSchema</str>
+
+            </lst>
+  </initParams>
+
+
+<!--    
+    Below are request handlers for analysis. These aren't neccessary but useful when getting started.
+    Read more about analysis here: https://cwiki.apache.org/confluence/display/solr/Running+Your+Analyzer?focusedCommentId=64554226#comment-64554226
+-->    
+    
+<!-- Gives you a request handler where you can do field analysis. Allows you to analyse index and query time -->
+  <requestHandler name="/analysis/field" 
+                  startup="lazy"
+                  class="solr.FieldAnalysisRequestHandler" />
+<!-- Gives you a request handler where you can do document analysis. Also supports query analysis -->
+  <requestHandler name="/analysis/document" 
+                  class="solr.DocumentAnalysisRequestHandler" 
+                  startup="lazy" />
+
+<!-- 
+    This handler simply outputs the contents of the SolrQueryRequest using the specified writer type wt. This is a useful tool to help understand what streams are available to the RequestHandlers. 
+-->
+  <requestHandler name="/debug/dump" class="solr.DumpRequestHandler" />
+
+  <updateRequestProcessorChain name="add-unknown-fields-to-the-schema">
+  <!-- UUIDUpdateProcessorFactory will generate an id if none is present in the incoming document -->
+  <processor class="solr.UUIDUpdateProcessorFactory" />
+  <processor class="solr.RemoveBlankFieldUpdateProcessorFactory"/>
+  <processor class="solr.FieldNameMutatingUpdateProcessorFactory">
+    <str name="pattern">[^\w-\.]</str>
+    <str name="replacement">_</str>
+  </processor>
+  <processor class="solr.ParseBooleanFieldUpdateProcessorFactory"/>
+  <processor class="solr.ParseLongFieldUpdateProcessorFactory"/>
+  <processor class="solr.ParseDoubleFieldUpdateProcessorFactory"/>
+  <processor class="solr.ParseDateFieldUpdateProcessorFactory">
+    <arr name="format">
+      <str>yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
+      <str>yyyy-MM-dd'T'HH:mm:ss,SSSZ</str>
+      <str>yyyy-MM-dd'T'HH:mm:ss.SSS</str>
+      <str>yyyy-MM-dd'T'HH:mm:ss,SSS</str>
+      <str>yyyy-MM-dd'T'HH:mm:ssZ</str>
+      <str>yyyy-MM-dd'T'HH:mm:ss</str>
+      <str>yyyy-MM-dd'T'HH:mmZ</str>
+      <str>yyyy-MM-dd'T'HH:mm</str>
+      <str>yyyy-MM-dd HH:mm:ss.SSSZ</str>
+      <str>yyyy-MM-dd HH:mm:ss,SSSZ</str>
+      <str>yyyy-MM-dd HH:mm:ss.SSS</str>
+      <str>yyyy-MM-dd HH:mm:ss,SSS</str>
+      <str>yyyy-MM-dd HH:mm:ssZ</str>
+      <str>yyyy-MM-dd HH:mm:ss</str>
+      <str>yyyy-MM-dd HH:mmZ</str>
+      <str>yyyy-MM-dd HH:mm</str>
+      <str>yyyy-MM-dd</str>
+    </arr>
+  </processor>
+  <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
+    <str name="defaultFieldType">string</str>
+    <lst name="typeMapping">
+      <str name="valueClass">java.lang.Boolean</str>
+      <str name="fieldType">boolean</str>
+    </lst>
+    <lst name="typeMapping">
+      <str name="valueClass">java.util.Date</str>
+      <str name="fieldType">tdate</str>
+    </lst>
+    <lst name="typeMapping">
+      <str name="valueClass">java.lang.Long</str>
+      <str name="valueClass">java.lang.Integer</str>
+      <str name="fieldType">tlong</str>
+    </lst>
+    <lst name="typeMapping">
+      <str name="valueClass">java.lang.Number</str>
+      <str name="fieldType">tdouble</str>
+    </lst>
+  </processor>
+  <processor class="solr.LogUpdateProcessorFactory"/>
+  <processor class="solr.DistributedUpdateProcessorFactory"/>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+</updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="guessSchema">
+  <!-- UUIDUpdateProcessorFactory will generate an id if none is present in the incoming document -->
+<!--  <processor class="solr.UUIDUpdateProcessorFactory" /> -->
+  <processor class="solr.RemoveBlankFieldUpdateProcessorFactory"/>
+<!--  <processor class="solr.FieldNameMutatingUpdateProcessorFactory">
+    <str name="pattern">[^\w-\.]</str>
+    <str name="replacement">_</str>
+  </processor>
+-->
+  <processor class="solr.ParseBooleanFieldUpdateProcessorFactory"/>
+  <processor class="solr.ParseLongFieldUpdateProcessorFactory"/>
+  <processor class="solr.ParseDoubleFieldUpdateProcessorFactory"/>
+  <processor class="solr.ParseDateFieldUpdateProcessorFactory">
+    <arr name="format">
+      <str>yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
+      <str>yyyy-MM-dd'T'HH:mm:ss,SSSZ</str>
+      <str>yyyy-MM-dd'T'HH:mm:ss.SSS</str>
+      <str>yyyy-MM-dd'T'HH:mm:ss,SSS</str>
+      <str>yyyy-MM-dd'T'HH:mm:ssZ</str>
+      <str>yyyy-MM-dd'T'HH:mm:ss</str>
+      <str>yyyy-MM-dd'T'HH:mmZ</str>
+      <str>yyyy-MM-dd'T'HH:mm</str>
+      <str>yyyy-MM-dd HH:mm:ss.SSSZ</str>
+      <str>yyyy-MM-dd HH:mm:ss,SSSZ</str>
+      <str>yyyy-MM-dd HH:mm:ss.SSS</str>
+      <str>yyyy-MM-dd HH:mm:ss,SSS</str>
+      <str>yyyy-MM-dd HH:mm:ssZ</str>
+      <str>yyyy-MM-dd HH:mm:ss</str>
+      <str>yyyy-MM-dd HH:mmZ</str>
+      <str>yyyy-MM-dd HH:mm</str>
+      <str>yyyy-MM-dd</str>
+    </arr>
+  </processor>
+
+
+  <processor class="solr.LearnSchemaUpdateRequestProcessorFactory">
+    <str name="defaultFieldType">string</str>
+    <str name="mode">train</str>
+    <lst name="typeMapping">
+      <str name="valueClass">java.lang.Boolean</str>
+      <str name="fieldType">boolean</str>
+    </lst>
+    <lst name="typeMapping">
+      <str name="valueClass">java.util.Date</str>
+      <str name="fieldType">tdate</str>
+    </lst>
+    <lst name="typeMapping">
+      <str name="valueClass">java.lang.Long</str>
+      <str name="valueClass">java.lang.Integer</str>
+      <str name="fieldType">tlong</str>
+    </lst>
+    <lst name="typeMapping">
+      <str name="valueClass">java.lang.Number</str>
+      <str name="fieldType">tdouble</str>
+    </lst>
+
+    <!--
+    <lst name="regexMapping">
+	    <str name="regexPattern">\b(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]</str>
+	    <str name="fieldType">link</str>
+    </lst>
+-->
+    <lst name="regexMapping">
+      <str name="regexPattern">([^\s]+(\.(?i)(jpg|png|gif|bmp))$)</str>
+      <str name="fieldType">image</str>
+    </lst>
+    <lst name="regexMapping">
+	    <str name="regexPattern">(null)</str>
+	    <str name="fieldType">nullType</str>
+    </lst>
+        <lst name="regexMapping">
+		<str name="regexPattern">^[a-zA-Z0-9\-_#]{0,64}$</str>
+		<str name="fieldType">skuType</str>
+	</lst>
+
+      <lst name="typeTree">
+        <lst name="string">
+		
+
+          <lst name="tdouble">
+            <lst name="tlong">
+		    <lst name="tint"> 
+			<lst name="nullType"> </lst>
+		    </lst>
+            </lst>
+          </lst>
+          
+	  <lst name="pdate"> 
+		<lst name="nullType"> </lst>
+	  </lst>
+	  <lst name="tdate"> 
+	  	<lst name="nullType"> </lst>
+	  </lst>
+	  <lst name="link">
+		<lst name="nullType"> </lst>
+	  </lst>
+	  <lst name="image"> 
+		<lst name="nullType"> </lst>
+	  </lst>
+	  <lst name="boolean">
+		<lst name="nullType"> </lst>
+	 </lst>
+	 <lst name="skuType">
+	</lst>
+
+        </lst>
+      </lst>
+
+  </processor>
+  <processor class="solr.LogUpdateProcessorFactory"/>
+</updateRequestProcessorChain>
+
+
+<schemaFactory class="ManagedIndexSchemaFactory">
+	  <bool name="mutable">true</bool>
+	    <str name="managedSchemaResourceName">managed-schema</str>
+ </schemaFactory>
+
+
+</config>
